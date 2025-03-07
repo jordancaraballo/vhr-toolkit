@@ -35,6 +35,7 @@ def main():
     # ---
     args = parseArgs()
     outDir: Path = args.o
+    outDir.mkdir(exist_ok=True)
 
     # ---
     # Logging
@@ -76,12 +77,17 @@ def main():
     toas = toaDir.glob('*-toa.tif')
 
     # ---
+    # CCDC
+    # ---
+    ccdcGEEKey: Path = args.gee_key
+
+    # ---
     # Process ToA files.
     # ---
     for toaFile in toas:
 
         logger.info('Processing ' + str(toaFile))
-        processToaFile(toaFile, toaDir, toaDirNum, outDir, logger)
+        processToaFile(toaFile, toaDir, toaDirNum, ccdcGEEKey, outDir, logger)
 
 
 # -----------------------------------------------------------------------------
@@ -128,6 +134,7 @@ def getBandPairs(toaFile: Path, ccdcFile: Path) -> list:
 def processToaFile(toaFile: Path,
                    toaDir: Path,
                    toaDirNum: int,
+                   ccdcGEEKey: Path,
                    outDir: Path,
                    logger: logging.RootLogger) -> None:
 
@@ -152,7 +159,8 @@ def processToaFile(toaFile: Path,
     ccdcDirNum = cMaskDirNum + 1
     ccdcDir = outDir / (str(ccdcDirNum) + '-ccdc')
     ccdcDir.mkdir(exist_ok=True)
-    ccdc = CCDCPipeline(input_dir=toaDir, output_dir=ccdcDir)
+    ccdc = CCDCPipeline(
+        input_dir=toaDir, output_dir=ccdcDir, gee_key=ccdcGEEKey)
     ccdcFile: Path = ccdc.run(toaFile)[0]
 
     # ---
@@ -243,6 +251,11 @@ def parseArgs() -> argparse.Namespace:
     # ---
     # CCDC Parameters
     # ---
+    parser.add_argument('--gee-key',
+                        type=Path,
+                        required=False,
+                        default=None,
+                        help='Fully-qualified path to GEE JSON key file. ')
 
     # ---
     # SR-lite Parameters
